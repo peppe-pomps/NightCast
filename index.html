@@ -1,0 +1,80 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description" content="Esplora il cielo stellato di stasera, controlla il meteo astronomico e scopri i pianeti visibili nella tua posizione.">
+        
+        <meta property="og:title" content="NightCast">
+        <meta property="og:description" content="Scopri cosa si vede nel cielo stanotte.">
+
+        <title>NightCast</title>
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link rel="stylesheet" href="style.css">
+
+        <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
+        <script src="js/app.js" defer></script>
+    </head>
+
+    <body>
+        <div id="particles-js"></div>
+
+        <div id="page-wrapper">
+            <section id="main">
+                <main>
+                    <div class="main-content">
+                        <h1>NightCast</h1>
+
+                        <h2>Le previsoni della notte</h2>
+
+                        <div class="main-description">
+                            <p>Scopri se stanotte vale la pena alzare gli occhi al cielo. Meteo stellare, fase lunare, pianeti visibili e prossimi eventi astronomici — basati sulla tua posizione reale.</p>
+                        </div>
+
+                        <a href="#" class="main-button glass-card">
+                            Esplora Ora <i class="fa-solid fa-arrow-up"></i>
+                        </a>
+                    </div>
+                </main>
+            </section>
+
+            <section id="dashboard">
+                <button id="btn-back" style="
+                    position: absolute;
+                    top: 20px;
+                    left: 20px;
+                    z-index: 100;
+                    background: rgba(255,255,255,0.1);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 50px;
+                    cursor: pointer;
+                    font-family: 'Exo 2', sans-serif;
+                    pointer-events: auto;
+                    backdrop-filter: blur(5px);
+                ">← Torna</button>
+            </section>
+        </div>
+
+        <footer class="glass-card">
+            <div class="footer-left">
+                <p>© 2026 | Giuseppe Pompilio</p>
+            </div>
+
+            <div class="footer-center">
+                <a href="https://github.com/peppe-pomps" target="_blank" class="footer-link" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                <a href="https://www.instagram.com/peppe.pomps89?igsh=MXdieWY1aWg5YnJpZw==" target="_blank" class="footer-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://www.tiktok.com/@peppe_pomps89?_r=1&_t=ZN-96fAaWPmuwQ" target="_blank" class="footer-link" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+            </div>
+
+            <div class="footer-right">
+                <p>v1.0.0</p>
+            </div>
+        </footer>
+    </body>
+</html>
