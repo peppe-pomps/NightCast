@@ -109,18 +109,47 @@ particlesJS("particles-js", {
   "retina_detect": false
 });
 
-const page_wrapper = document.getElementById('page-wrapper');
-const footer = document.querySelector('footer');
+const pageWrapper = document.getElementById("page-wrapper");
+const footer = document.querySelector("footer");
 
-document.querySelector('.main-button').addEventListener('click', (e) => {
+document.querySelector(".main-button").addEventListener("click", (e) => {
   e.preventDefault();
-  page_wrapper.style.transform = 'translateY(0)';
-  footer.style.opacity = '0';
-  footer.style.pointerEvents = 'none';
+  pageWrapper.style.transform = "translateY(0)";
+  footer.style.opacity = "0";
+  footer.style.pointerEvents = "none";
 });
 
-document.getElementById('btn-back').addEventListener('click', () => {
-  page_wrapper.style.transform = 'translateY(-100vh)';
-  footer.style.opacity = '1';
-  footer.style.pointerEvents = 'auto';
+document.getElementById("btn-back").addEventListener("click", () => {
+  pageWrapper.style.transform = "translateY(-100vh)";
+  footer.style.opacity = "1";
+  footer.style.pointerEvents = "auto";
 });
+
+async function getLatestVersion(){
+  const repo = "peppe-pomps/NightCast";
+  const label = document.getElementById("version-label");
+
+  try{
+    const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
+    
+    if(response.ok){
+      const data = await response.json();
+      label.innerText = data.tag_name;
+    }else{
+      const tagResponse = await fetch(`https://api.github.com/repos/${repo}/tags`);
+      const tagData = await tagResponse.json();
+
+      if(tagData.length > 0){
+        label.innerText = tagData[0].name;
+      }else{
+        label.innerText = "v0.0.0";
+      }
+    }
+    
+  }catch(error){
+    console.error("ERROR: Version fetching error", error);
+    label.innerText = "Error";
+  }
+}
+
+getLatestVersion();
