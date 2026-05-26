@@ -74,6 +74,13 @@ main {
     margin-bottom: 40px;
 }
 
+.main-logo {
+    max-width: 500px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
 .main-description {
     background: linear-gradient(to right, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
     border-left: 4px solid rgba(255, 255, 255, 0.3);
