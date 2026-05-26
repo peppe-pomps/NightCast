@@ -124,32 +124,3 @@ document.getElementById("btn-back").addEventListener("click", () => {
   footer.style.opacity = "1";
   footer.style.pointerEvents = "auto";
 });
-
-async function getLatestVersion(){
-  const repo = "peppe-pomps/NightCast";
-  const label = document.getElementById("version-label");
-
-  try{
-    const response = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
-    
-    if(response.ok){
-      const data = await response.json();
-      label.innerText = data.tag_name;
-    }else{
-      const tagResponse = await fetch(`https://api.github.com/repos/${repo}/tags`);
-      const tagData = await tagResponse.json();
-
-      if(tagData.length > 0){
-        label.innerText = tagData[0].name;
-      }else{
-        label.innerText = "v0.0.0";
-      }
-    }
-    
-  }catch(error){
-    console.error("ERROR: Version fetching error", error);
-    label.innerText = "Error";
-  }
-}
-
-getLatestVersion();
