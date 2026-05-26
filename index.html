@@ -17,6 +17,9 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <link rel="stylesheet" href="style.css">
 
+        <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
+
         <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
         <script src="js/app.js" defer></script>
     </head>
@@ -43,41 +46,61 @@
                         </a>
                     </div>
                 </main>
+
+                <footer class="glass-card">
+                    <div class="footer-left">
+                        <p>© 2026 | Giuseppe Pompilio</p>
+                    </div>
+        
+                    <div class="footer-center">
+                        <a href="https://github.com/peppe-pomps" target="_blank" class="footer-link" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
+                        <a href="https://www.instagram.com/peppe.pomps89?igsh=MXdieWY1aWg5YnJpZw==" target="_blank" class="footer-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@peppe_pomps89?_r=1&_t=ZN-96fAaWPmuwQ" target="_blank" class="footer-link" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    </div>
+        
+                    <div class="footer-right">
+                        <span id="version">v1.3.2</span>
+                    </div>
+                </footer>
             </section>
 
             <section id="dashboard">
-                <button id="btn-back" style="
-                    position: absolute;
-                    top: 20px;
-                    left: 20px;
-                    z-index: 100;
-                    background: rgba(255,255,255,0.1);
-                    border: 1px solid rgba(255,255,255,0.2);
-                    color: white;
-                    padding: 10px 20px;
-                    border-radius: 50px;
-                    cursor: pointer;
-                    font-family: 'Exo 2', sans-serif;
-                    pointer-events: auto;
-                    backdrop-filter: blur(5px);
-                ">← Torna</button>
+                <div class="dashboard-nav">
+                    <h1>
+                        <img src="assets/logo.svg" alt="NightCast" class="nav-logo">
+                    </h1>
+                </div>
+
+                <div class="dashboard-content">
+                    <div class="location-card glass-card" id="location-card">
+                        <div class="location-header">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <span id="location-name">Nessuna posizione selezionata</span>
+                        </div>
+
+                        <div class="location-actions">
+                            <button id="button-gps" class="glass-card">
+                                <i class="fa-solid fa-crosshairs"></i> Usa la mia posizione
+                            </button>
+
+                            <div class="location-search">
+                                <input type="text" id="location-input" placeholder="Cerca una città">
+                                <button id="button-search">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="mini-map"></div>
+
+                        <div id="day-selector" class="day-selector glass-card"></div>
+                    </div>
+                </div>
+
+                <button id="back-button" class="back-button glass-card">
+                    Torna giù<i class="fa-solid fa-arrow-down"></i>
+                </button>
             </section>
         </div>
-
-        <footer class="glass-card">
-            <div class="footer-left">
-                <p>© 2026 | Giuseppe Pompilio</p>
-            </div>
-
-            <div class="footer-center">
-                <a href="https://github.com/peppe-pomps" target="_blank" class="footer-link" aria-label="GitHub"><i class="fa-brands fa-github"></i></a>
-                <a href="https://www.instagram.com/peppe.pomps89?igsh=MXdieWY1aWg5YnJpZw==" target="_blank" class="footer-link" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                <a href="https://www.tiktok.com/@peppe_pomps89?_r=1&_t=ZN-96fAaWPmuwQ" target="_blank" class="footer-link" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
-            </div>
-
-            <div class="footer-right">
-                <span id="version">v1.2.2</span>
-            </div>
-        </footer>
     </body>
 </html>
