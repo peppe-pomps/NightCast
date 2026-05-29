@@ -24,8 +24,9 @@ function initMap(lat, lon){
       attributionControl: false,
     }).setView(coordinates, 10);
   
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
+    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
+      maxZoom: 20,
     }).addTo(map);
   
     marker = L.marker(coordinates, {draggable: true}).addTo(map);
@@ -129,7 +130,7 @@ async function reverseGeocodeCoords(lat, lon){
     const res = await fetch(url, {headers: {'Accept-Language': 'it'}});
     const data = await res.json();
     const address = data.address;
-    return address.city || address.town || address.village || address.county || 'Unknown position';
+    return address.city || address.town || address.village || address.county || 'Posizione sconosciuta';
 }
   
 document.getElementById('button-search').addEventListener('click', async () => {
@@ -207,6 +208,43 @@ function buildDaySelector(){
 }
   
 buildDaySelector()
+
+function getSelectedDay(){
+  const date = new Date();
+  date.setDate(date.getDate() + state.selectedDay);
+  date.setHours(22, 0, 0, 0);
+  return date;
+}
+
+// ASTRONOMY ENGINE
+function getObserver(){
+  return new Astronomy.Observer(state.lat, state.lon, 0);
+}
+
+function degreesToCardinal(deg){
+  const dirs = ['N','NE','E','SE','S','SO','O','NO'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function isVisible(body, date, observer){
+  try{
+    const equator = Astronomy.Equator(body, date, observer, true, true);
+    const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
+    return horizon.altitude > 10;
+  }catch{
+    return false;
+  }
+}
+
+function getAltitudeAzimut(body, date, observer){
+  try{
+    const equator = Astronomy.Equator(body, date, observer, true, true);
+    const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
+    return {altitude: horizon.altitude, azimuth: horizon.azimuth};
+  }catch{
+    return null;
+  }
+}
   
   // UPDATE DASHBOARD
 function updateDashboard(){
