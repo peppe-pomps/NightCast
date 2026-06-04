@@ -18,11 +18,13 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
         <link rel="stylesheet" href="style.css">
 
-        <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js" defer></script>
-        <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js" defer></script>
-        <script src="https://unpkg.com/leaflet/dist/leaflet.js" defer></script>
-        <script src="js/app.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+        <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
         <script src="js/dashboard.js" defer></script>
+        <script src="js/app.js" defer></script>
+        <script src="js/skymap.js" defer></script>
+        <script src="js/particles.js" defer></script>
     </head>
 
     <body>
@@ -60,7 +62,7 @@
                     </div>
         
                     <div class="footer-right">
-                        <span id="version">v1.4.1</span>
+                        <span id="version">v1.5.0</span>
                     </div>
                 </footer>
             </section>
@@ -68,7 +70,7 @@
             <section id="dashboard">
                 <div class="dashboard-nav glass-card">
                     <button id="back-button" class="back-button glass-card">
-                        Torna giù<i class="fa-solid fa-arrow-down"></i>
+                        Torna<i class="fa-solid fa-arrow-down"></i>
                     </button>
 
                     <h1>
@@ -101,15 +103,60 @@
                         <div id="day-selector" class="day-selector glass-card"></div>
 
                         <div class="dash-grid">
-                            <div class="card-verdict grid-element glass-card" id="card-verdict"></div>
-                            <div class="card-moon grid-element glass-card" id="card-moon"></div>
-                            <div class="card-weather grid-element glass-card" id="card-weather"></div>
-                            <div class="card-visibles grid-element glass-card" id="card-visibles"></div>
-                            <div class="card-events grid-element glass-card" id="card-events"></div>
+                            <div class="card-verdict grid-element glass-card" id="card-verdict">
+                                <div class="card-label">Qualità della notte</div>
+                                <div class="verdict-content">
+                                    <div class="verdict-emoji" id="verdict-emoji">⏳</div>
+                                    <div class="verdict-score" id="verdict-score">-</div>
+                                    <div class="verdict-text" id="verdict-text">Seleziona una posizione</div>
+                                    <div class="verdict-details" id="verdict-details"></div>
+                                </div>
+                            </div>
+
+                            <div class="card-moon grid-element glass-card" id="card-moon">
+                                <div class="card-label">Fase lunare</div>
+                                <div class="moon-content">
+                                    <div class="moon-emoji" id="moon-emoji">🌕</div>
+                                    <div class="moon-info">
+                                        <div class="moon-phase-name" id="moon-phase-name">-</div>
+                                        <div class="moon-illumination" id="moon-illumination">-</div>
+                                        <div class="moon-times" id="moon-times">-</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card-weather grid-element glass-card" id="card-weather">
+                                <div class="card-label">Meteo stellare</div>
+                                <div class="weather-days" id="weather-days"></div>
+                            </div>
+
+                            <div class="card-visibles grid-element glass-card" id="card-visibles">
+                                <div class="card-label">Visibili stanotte</div>
+                                <div class="visibles-list" id="visibles-list"></div>
+                            </div>
+
+                            <div class="card-events grid-element glass-card" id="card-events">
+                                <div class="card-label">Prossimi eventi</div>
+                                <div class="events-list" id="events-list"></div>
+                            </div>
                         </div>
+
+                        <button class="button-map glass-card" id="button-map">
+                            <i class="fa-solid fa-metor"></i> Apri mappa del cielo
+                        </button>
                     </div>
                 </div>
             </section>
+        </div>
+
+        <div class="sky-modal" id="sky-modal">
+            <div class="sky-modal-header">
+                <span class="sky-modal-title">🌌 Mappa del cielo</span>
+                <button class="sky-modal-close glass-card" id="close-modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <canvas id="sky-canvas"></canvas>
         </div>
     </body>
 </html>

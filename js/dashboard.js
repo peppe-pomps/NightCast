@@ -5,7 +5,8 @@ const state = {
     locationName: 'No position',
     selectedDay: 0,
 }
-  
+ 
+let weatherCache = null;
 let map = null;
 let marker = null;
   
@@ -24,9 +25,8 @@ function initMap(lat, lon){
       attributionControl: false,
     }).setView(coordinates, 10);
   
-    L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>',
-      maxZoom: 20,
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
     }).addTo(map);
   
     marker = L.marker(coordinates, {draggable: true}).addTo(map);
@@ -67,7 +67,7 @@ function loadState(){
 async function setPosition(lat, lon, reverseGeocode = false){
     state.lat = lat;
     state.lon = lon;
-  
+    weatherCache = null;
     const coordinates = [lat, lon]
   
     if(reverseGeocode){
@@ -80,8 +80,10 @@ async function setPosition(lat, lon, reverseGeocode = false){
     if(map){
       map.setView(coordinates, 10);
       marker.setLatLng(coordinates);
+      map.invalidateSize();
     }else{
       initMap(lat, lon);
+      setTimeout(() => map.invalidateSize(), 300);
     }
   
     saveState();
@@ -163,6 +165,7 @@ if(loadState() && state.lat && state.lon){
     (async () => {
       document.getElementById('location-name').textContent = state.locationName;
       await setPosition(state.lat, state.lon, false);
+      await updateDashboard();
     })();
 }else{
     navigator.geolocation.getCurrentPosition(
@@ -178,7 +181,7 @@ if(loadState() && state.lat && state.lon){
       });  
 }
   
-  // DAY SELECTOR
+// DAY SELECTOR
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
 const MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
   
@@ -245,8 +248,378 @@ function getAltitudeAzimut(body, date, observer){
     return null;
   }
 }
+
+// OPEN METEO
+async function fetchWeather(lat, lon){
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}`
+    + `&daily=cloud_cover_mean,precipitation_probability_mean,windspeed_10m_max,temperature_2m_max,temperature_2m_min`
+    + `&hourly=cloud_cover,precipitation_probability,windspeed_10m,temperature_2m`
+    + `&timezone=auto&forecast_days=7`;
+  const result = await fetch(url);
+  const data = await result.json();
   
-  // UPDATE DASHBOARD
-function updateDashboard(){
-    return;
+  return data;
 }
+
+function getWeatherForDay(weatherData, dayIndex){
+  if(!weatherData) return null;
+
+  const baseHour = dayIndex * 24;
+  const nightHours = [baseHour + 22, baseHour + 23, baseHour + 24, baseHour + 25, baseHour + 26];
+  const validHours = nightHours.filter(h => h < weatherData.hourly.cloud_cover.length);
+
+  const avg = (arr, indexes) => indexes.reduce((s, i) => s + (arr[i] || 0), 0) / indexes.length;
+
+  const cloudCover = avg(weatherData.hourly.cloud_cover, validHours);
+  const precipitation = avg(weatherData.hourly.precipitation_probability, validHours);
+  const windspeed = avg(weatherData.hourly.windspeed_10m, validHours);
+  const temperature = avg(weatherData.hourly.temperature_2m, validHours);
+
+  return {
+    cloudCover: Math.round(cloudCover),
+    precipitation: Math.round(precipitation),
+    windspeed: Math.round(windspeed),
+    temperature: Math.round(temperature),
+    seeing: estimateSeeing(cloudCover, windspeed),
+  };
+}
+
+function estimateSeeing(cloudCover, windspeed){
+  let score = 5;
+  if(cloudCover > 20) score--;
+  if(cloudCover > 50) score--;
+  if(cloudCover > 80) score--;
+  if(windspeed > 20) score--;
+  if(windspeed > 40) score--;
+
+  return Math.max(1, score);
+}
+
+// MOON
+function getMoonPhaseName(angle){
+  if(angle < 22.5) return 'Luna Nuova';
+  if(angle < 67.5) return 'Crescente';
+  if(angle < 112.5) return 'Primo Quarto';
+  if(angle < 157.5) return 'Gibbosa Crescente';
+  if(angle < 202.5) return 'Luna Piena';
+  if(angle < 247.5) return 'Gibbosa Calante';
+  if(angle < 292.5) return 'Ultimo Quarto';
+  if(angle < 337.5) return 'Calante';
+
+  return 'Luna Nuova';
+}
+
+function getMoonEmoji(angle){
+  if (angle < 22.5) return '🌑';
+  if (angle < 67.5) return '🌒';
+  if (angle < 112.5) return '🌓';
+  if (angle < 157.5) return '🌔';
+  if (angle < 202.5) return '🌕';
+  if (angle < 247.5) return '🌖';
+  if (angle < 292.5) return '🌗';
+  if (angle < 337.5) return '🌘';
+  
+  return '🌑';
+}
+
+function updateMoon(date, observer){
+  const phaseAngle = Astronomy.MoonPhase(date);
+  const illum      = Astronomy.Illumination('Moon', date);
+  const moonPct    = Math.round(illum.phase_fraction * 100);
+  const phaseName  = getMoonPhaseName(phaseAngle);
+  const moonEmoji  = getMoonEmoji(phaseAngle);
+
+  let timesHTML = '';
+  try{
+    const rise = Astronomy.SearchRiseSet('Moon', observer, +1, date, 1);
+    const set  = Astronomy.SearchRiseSet('Moon', observer, -1, date, 1);
+    const fmt  = d => d ? new Date(d.date).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '—';
+    timesHTML  = `🌅 Alba: ${fmt(rise)}<br>🌇 Tramonto: ${fmt(set)}`;
+  }catch{
+    timesHTML = '';
+  }
+
+  document.getElementById('moon-emoji').textContent = moonEmoji;
+  document.getElementById('moon-phase-name').textContent = phaseName;
+  document.getElementById('moon-illumination').textContent = `${moonPct}% illuminata`;
+  document.getElementById('moon-times').innerHTML = timesHTML;
+
+  return moonPct;
+}
+
+// METEO
+function getWeatherIcon(cloudCover, precipitation){
+  if(precipitation > 50) return '🌧️';
+  if(precipitation > 20) return '🌦️';
+  if(cloudCover > 80) return '☁️';
+  if(cloudCover > 50) return '⛅';
+  if(cloudCover > 20) return '🌤️';
+  return '✨';
+}
+
+function updateWeather(weatherData){
+  const container = document.getElementById('weather-days');
+  container.innerHTML = '';
+  
+  for (let i = 0; i < 7; i++) {
+    const day = getWeatherForDay(weatherData, i);
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+
+    const icon     = getWeatherIcon(day.cloudCover, day.precipitation);
+    const dayName  = i === 0 ? 'Oggi' : DAYS[date.getDay()];
+    const isActive = i === state.selectedDay;
+
+    // stelle seeing
+    let seeingStars = '';
+    for (let s = 1; s <= 5; s++) {
+        seeingStars += `<span class="seeing-star ${s <= day.seeing ? 'active' : ''}">★</span>`;
+    }
+
+    const element = document.createElement('div');
+    element.className = `weather-day ${isActive ? 'active' : ''}`;
+    element.innerHTML = `
+        <span class="weather-day-name">${dayName}</span>
+        <span class="weather-day-icon">${icon}</span>
+        <span class="weather-day-temp">${Math.round(day.temperature)}°</span>
+        <span class="weather-day-cloud">☁️ ${Math.round(day.cloudCover)}%</span>
+        <div class="weather-seeing">${seeingStars}</div>
+    `;
+
+    element.addEventListener('click', () => {
+        state.selectedDay = i;
+        document.querySelectorAll('.day-button').forEach((b, idx) => {
+            b.classList.toggle('active', idx === i);
+        });
+        updateDashboard();
+    });
+
+    container.appendChild(element);
+  }
+}
+
+// VISIBLES
+const PLANETS = [
+  { body: 'Mercury', name: 'Mercurio', icon: '☿️' },
+  { body: 'Venus', name: 'Venere', icon: '♀️' },
+  { body: 'Mars', name: 'Marte', icon: '♂️' },
+  { body: 'Jupiter', name: 'Giove', icon: '♃'  },
+  { body: 'Saturn', name: 'Saturno', icon: '♄'  },
+  { body: 'Uranus', name: 'Urano', icon: '♅'  },
+  { body: 'Neptune', name: 'Nettuno', icon: '♆'  },
+];
+
+function updateVisibles(date, observer){
+  const container = document.getElementById('visibles-list');
+  container.innerHTML = '';
+
+  const visible = [];
+
+  for(const planet of PLANETS){
+      try{
+          const equator = Astronomy.Equator(planet.body, date, observer, true, true);
+          const horizon = Astronomy.Horizon(date, observer, equator.ra, equator.dec, 'normal');
+
+          if(horizon.altitude > 10){
+              visible.push({
+                  ...planet,
+                  altitude: Math.round(horizon.altitude),
+                  azimuth: Math.round(horizon.azimuth),
+                  cardinal: degreesToCardinal(horizon.azimuth),
+              });
+          }
+      }catch{
+        continue;
+      }
+  }
+
+  if(visible.length === 0){
+      container.innerHTML = `<div class="visibles-empty">🌑 Nessun pianeta visibile<br>in questo momento</div>`;
+      return;
+  }
+
+  visible.sort((a, b) => b.altitude - a.altitude);
+
+  for(const planet of visible){
+      const element = document.createElement('div');
+      element.className = 'visible-item';
+      element.innerHTML = `
+          <span class="visible-icon">${planet.icon}</span>
+          <div class="visible-info">
+              <span class="visible-name">${planet.name}</span>
+              <span class="visible-details">${planet.altitude}° di altezza</span>
+          </div>
+          <span class="visible-direction">Direzione: ${planet.cardinal}</span>
+      `;
+      container.appendChild(element);
+  }
+}
+
+//EVENTS
+const METEOR_SHOWERS = [
+  {name: 'Perseidi', icon: '☄️', month: 7, day: 12},
+  {name: 'Leonidi', icon: '☄️', month: 10, day: 17},
+  {name: 'Geminidi', icon: '☄️', month: 11, day: 13},
+  {name: 'Quadrantidi', icon: '☄️', month: 0, day: 3},
+  {name: 'Eta Aquaridi', icon: '☄️', month: 4, day: 6},
+  {name: 'Orionidi', icon: '☄️', month: 9, day: 21},
+];
+
+function getNextMeteorShowers(fromDate){
+  const events = [];
+  const year = fromDate.getFullYear();
+
+  for(const shower of METEOR_SHOWERS){
+    for(const y of [year, year + 1]){
+      const date = new Date(y, shower.month, shower.day);
+      if(date >= fromDate){
+        const daysLeft = Math.round((date- fromDate) / 86400000);
+        events.push({
+          name: shower.name,
+          icon: shower.icon,
+          date: date,
+          daysLeft,
+        });
+        break;
+      }
+    }
+  }
+  return events;
+}
+
+function updateEvents(){
+  const container = document.getElementById('events-list');
+  container.innerHTML = '';
+
+  const now = new Date();
+  const events = [];
+
+  try{
+    const nextNew = Astronomy.SearchMoonPhase(0, now, 40);
+    const nextFull = Astronomy.SearchMoonPhase(180, now, 40);
+
+    if(nextNew){
+      const date = new Date(nextNew.date);
+      events.push({
+        icon: '🌑',
+        name: 'Luna Nuova',
+        date: date,
+        daysLeft: Math.round((date - now) / 86400000),
+      });
+    }
+    if(nextFull){
+      const date = new Date(nextFull.date);
+      events.push({
+        icon: '🌕',
+        name: 'Luna Piena',
+        date: date,
+        daysLeft: Math.round((date - now) / 86400000),
+      });
+    }
+  }catch{}
+
+  const OUTER_PLANETS = [
+    {body: 'Mars', name: 'Opposizione Marte', icon: '♂️'},
+    {body: 'Jupiter', name: 'Opposizione Giove', icon: '♃'},
+    {body: 'Saturn', name: 'Opposizione Saturno', icon: '♄'},
+  ];
+
+  for(const planet of OUTER_PLANETS){
+    try{
+      const opposition = Astronomy.SearchRelativeLongitude(planet.body, 180, now);
+      if(opposition){
+        const date = new Date(opposition.date);
+        const daysLeft = Math.round((date - now) / 86400000);
+        if(daysLeft >= 0 && daysLeft < 365){
+          events.push({icon: planet.icon, name: planet.name, date: date, daysLeft});
+        }
+      }
+    }catch{}
+  }
+
+  events.push(...getNextMeteorShowers(now));
+  events.sort((a,b) => a.daysLeft - b.daysLeft);
+
+  for(const event of events.slice(0,5)){
+    const dateStr = event.date.toLocaleDateString('it-IT', {
+      day: 'numeric', month: 'short'
+    });
+
+    const daysStr = event.daysLeft === 0 ? 'oggi' : event.daysLeft === 1 ? 'domani' : `tra ${event.daysLeft}gg`;
+
+    const element = document.createElement('div');
+    element.className = 'event-item';
+    element.innerHTML = `
+      <span class="event-icon">${event.icon}</span>
+      <div class="event-info">
+        <span class="event-name">${event.name}</span>
+        <span class="event-date">${dateStr}</span>
+      </div>
+      <span class="event-days-left">${daysStr}</span>
+    `;
+    container.appendChild(element);
+  }
+}
+  
+// UPDATE DASHBOARD
+async function updateVerdict(cloudCover, moonIllumination){
+  const emoji = document.getElementById('verdict-emoji');
+  const score = document.getElementById('verdict-score');
+  const text = document.getElementById('verdict-text');
+  const details = document.getElementById('verdict-details');
+  
+  let points = 100;
+  points -= cloudCover * 0.7;
+  points -= moonIllumination * 0.3;
+  points = Math.max(0, Math.round(points));
+
+  let cssClass, icon, label;
+
+  if(points >= 70){
+    cssClass = 'verdict-green';
+    icon = '🌟';
+    label = 'Notte eccellente';
+  }else if(points >= 40){
+    cssClass = 'verdict-yellow';
+    icon = '🌤️';
+    label = 'Notte discreta';
+  }else{
+    cssClass = 'verdict-red';
+    icon = '☁️';
+    label = 'Notte sfavorevole';
+  }
+
+  emoji.textContent = icon;
+  score.textContent = `${points}/100`;
+  score.className = `verdict-score ${cssClass}`;
+  text.textContent = label;
+  details.innerHTML = `
+    ☁️ Nuvolosità: ${cloudCover}%<br>
+    🌙 Luna: ${Math.round(moonIllumination)}% illuminata
+  `
+}
+
+async function updateDashboard(){
+  if(!state.lat || !state.lon) return;
+
+  if(!weatherCache){
+    weatherCache = await fetchWeather(state.lat, state.lon);
+  }
+
+  const weather = getWeatherForDay(weatherCache, state.selectedDay);
+  const date = getSelectedDay();
+  const observer = getObserver();
+
+  const moonPhase = Astronomy.MoonPhase(date);
+  const moonIllumination = Astronomy.Illumination('Moon', date);
+  
+  const moonPct = updateMoon(date, observer);
+  updateWeather(weatherCache);
+  updateVisibles(date, observer);
+  updateEvents();
+  await updateVerdict(weather.cloudCover, moonPct);
+}
+
+window.invalidateMap = () => {
+  if (map) map.invalidateSize();
+};
